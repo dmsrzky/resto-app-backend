@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "npx tsc",
+    "start": "node -r tsconfig-paths/register dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
