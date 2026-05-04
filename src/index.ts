@@ -6,6 +6,7 @@ import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import routes from './routes'
 import { startDailyReportCron } from './services/laporan.service'
+import 'module-alias/register'
 
 const app = express()
 const PORT = process.env.PORT || 3001
