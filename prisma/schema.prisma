@@ -1,0 +1,109 @@
+// prisma/schema.prisma
+// Definisi database schema.
+// Jalankan `npm run db:migrate` setiap kali ada perubahan di sini.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Admin ───────────────────────────────────────────────────
+// Hanya admin yang bisa login ke dashboard dan kelola menu/order
+model Admin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // bcrypt hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Category ────────────────────────────────────────────────
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  order     Int        @default(0)  // urutan tampil di menu
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  menuItems MenuItem[]
+}
+
+// ─── MenuItem ────────────────────────────────────────────────
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  price       Int         // dalam Rupiah (integer, hindari float)
+  image       String      // URL gambar (Cloudinary, dll)
+  isAvailable Boolean     @default(true)
+  isBestSeller Boolean    @default(false)
+  isSpicy     Boolean     @default(false)
+  order       Int         @default(0)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+}
+
+// ─── Order ───────────────────────────────────────────────────
+model Order {
+  id              String      @id @default(cuid())
+  customerName    String
+  customerPhone   String
+  customerEmail   String
+  orderType       OrderType
+  tableNumber     String?     // hanya untuk dine-in
+  status          OrderStatus @default(PENDING_PAYMENT)
+  paymentMethod   PaymentMethod
+  snapToken       String?     // token dari Midtrans
+  paymentToken    String?     // token pembayaran setelah sukses
+  subtotal        Int         // sebelum pajak & biaya layanan
+  serviceFee      Int         @default(2000)
+  tax             Int         // PPN 11%
+  totalPrice      Int         // subtotal + serviceFee + tax
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+}
+
+// ─── OrderItem ───────────────────────────────────────────────
+// Snapshot harga saat order dibuat.
+// Penting: jangan pakai relasi langsung ke MenuItem untuk harga,
+// karena harga MenuItem bisa berubah setelah order dibuat.
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  price      Int      // harga saat order dibuat (snapshot)
+  notes      String?
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+enum OrderType {
+  DINE_IN
+  PICKUP
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  MIDTRANS
+  CASH
+}
